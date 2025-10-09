@@ -28,3 +28,5 @@ Run the `cider-extensions-thread-first-completions` command and if the
 expression evaluates to a map, provides a helm menu for the keys of
 the map. If the value is not a map, the value is printed to the cider
 result buffer.
+
+[![Demo](https://img.youtube.com/vi/OQvpqp8W5gk/hqdefault.jpg)](https://www.youtube.com/embed/OQvpqp8W5gk)
