@@ -29,4 +29,6 @@ expression evaluates to a map, provides a helm menu for the keys of
 the map. If the value is not a map, the value is printed to the cider
 result buffer.
 
+Click this image to see a demo in YouTube:
+
 [![Demo](https://img.youtube.com/vi/OQvpqp8W5gk/hqdefault.jpg)](https://www.youtube.com/embed/OQvpqp8W5gk)
