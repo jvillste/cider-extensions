@@ -17,7 +17,7 @@ Copy the repository to your `~/.emacs.d/cider-extensions`. Insert these to your 
 (define-key cider-mode-map (kbd "C-o j") 'cider-extensions-autocompletions)
 ```
 
-# cider-extensions-thread-first-completions
+# cider-extensions-autocompletions
 
 Put your cursor in one of these positions
 
