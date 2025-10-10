@@ -6,7 +6,37 @@
                       :number 1
                       :vector [{:number 2}]})
 
-(defn thread-first-completions [sexp]
+(defn value-string-preview [string-value]
+  (subs string-value
+        0 (min 200 (count string-value))))
+
+(defn select-keys-autocompletions [sexp]
+  (when (and (list? sexp)
+             (= 'select-keys (first sexp)))
+    (let [value (eval (second sexp))]
+      (when (map? value)
+        (for [key (->> (keys value)
+                       (sort-by  pr-str))]
+          (list (str key " -> "
+                     (value-string-preview (pr-str (get value key))))
+                (pr-str key)))))))
+
+(deftest test-select-keys-autocompletions
+  (binding [*ns* (find-ns 'cider-extensions.core)]
+    (is (= '((":map -> {:string \"hello\"}" ":map")
+             (":number -> 1" ":number")
+             (":vector -> [{:number 2}]" ":vector"))
+           (select-keys-autocompletions '(select-keys a-map))))
+
+    (is (= '((":map -> {:string \"hello\"}" ":map")
+             (":number -> 1" ":number")
+             (":vector -> [{:number 2}]" ":vector"))
+           (select-keys-autocompletions '(select-keys a-map []))))
+
+    (is (= nil
+           (select-keys-autocompletions '(select-keys))))))
+
+(defn thread-first-autocompletions [sexp]
   (when (and (list? sexp)
              (= '-> (first sexp)))
     (let [value (eval sexp)]
@@ -15,31 +45,47 @@
           (let [string-value (pr-str (eval (into (list)
                                                  (reverse (concat sexp [key])))))]
             (list (str key " -> "
-                       (subs string-value
-                             0 (min 200 (count string-value))))
+                       (value-string-preview string-value))
                   (pr-str key))))
         (pr-str value)))))
 
-(deftest test-thread-first-completions
-  (is (= '((":map -> {:string \"hello\"}" ":map")
-           (":number -> 1" ":number")
-           (":vector -> [{:number 1} {:number 2}]" ":vector"))
-         (thread-first-completions '(-> a-map))))
+(deftest test-thread-first-autocompletions
+  (binding [*ns* (find-ns 'cider-extensions.core)]
+    (is (= '((":map -> {:string \"hello\"}" ":map")
+             (":number -> 1" ":number")
+             (":vector -> [{:number 2}]" ":vector"))
+           (thread-first-autocompletions '(-> a-map))))
 
-  (is (= "1"
-         (thread-first-completions '(-> a-map :number))))
+    (is (= "1"
+           (thread-first-autocompletions '(-> a-map :number))))
 
-  (is (= '((":string -> \"hello\"" ":string"))
-         (thread-first-completions '(-> a-map :map))))
+    (is (= '((":string -> \"hello\"" ":string"))
+           (thread-first-autocompletions '(-> a-map :map))))
 
-  (is (= "\"hello\""
-         (thread-first-completions '(-> a-map :map :string))))
+    (is (= "\"hello\""
+           (thread-first-autocompletions '(-> a-map :map :string))))
 
-  (is (= nil
-         (thread-first-completions :keyword)))
+    (is (= nil
+           (thread-first-autocompletions "(:keyword)")))
 
-  (is (= "[{:number 2}]"
-         (thread-first-completions '(-> a-map :vector))))
+    (is (= "[{:number 2}]"
+           (thread-first-autocompletions '(-> a-map :vector))))
 
-  (is (= "2"
-         (thread-first-completions '(-> a-map :vector first :number)))))
+    (is (= "2"
+           (thread-first-autocompletions '(-> a-map :vector first :number))))))
+
+(defn autocompletions [first-level-sexp second-level-sexp]
+  (or (thread-first-autocompletions first-level-sexp)
+      (select-keys-autocompletions second-level-sexp)))
+
+(deftest test-autocompletions
+  (binding [*ns* (find-ns 'cider-extensions.core)]
+    (is (= '((":map -> {:string \"hello\"}" ":map")
+             (":number -> 1" ":number")
+             (":vector -> [{:number 2}]" ":vector"))
+           (autocompletions '(-> a-map) '())))
+
+    (is (= '((":map -> {:string \"hello\"}" ":map")
+             (":number -> 1" ":number")
+             (":vector -> [{:number 2}]" ":vector"))
+           (autocompletions '() '(select-keys a-map []))))))

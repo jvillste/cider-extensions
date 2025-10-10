@@ -8,30 +8,29 @@
     (message "loading cider-extensions")
     (cider-load-file cider-extensions-source-file-path)))
 
-(add-hook 'cider-repl-mode-hook
+(add-hook 'cider-connected-hook
           'cider-extensions-load-cider-extensions)
 
-(defun cider-extensions-thread-first-completions ()
-  "Offer completion for map keys at point based on CIDER runtime value."
+(defun cider-extensions-autocompletions ()
+  "Offer autocompletions cursor using the context around the cursor and the program runtime state."
   (interactive)
-  (cider-interactive-eval (format "(cider-extensions.core/thread-first-completions (quote %s))"
-                                  (cider-list-at-point))
+  (cider-interactive-eval (format "(cider-extensions.core/autocompletions (quote %s) (quote %s))"
+                                  (cider-list-at-point)
+                                  (ignore-errors (save-excursion
+                                                   (up-list 2 t t)
+                                                   (cider-sexp-at-point))))
                           (nrepl-make-response-handler (current-buffer)
                                                        (lambda (buffer value-string)
-                                                         (message value-string)
-                                                         (let ((value (read value-string)))
-                                                           (if (listp value)
-                                                               (with-current-buffer buffer
-                                                                 (insert (first (helm :sources
-                                                                                      (helm-build-sync-source "->"
-                                                                                        :candidates value)
-                                                                                      :buffer "*helm cider map keys*"))
-                                                                         ;; (completing-read "" value)
-                                                                         ))
-                                                             (cider-emit-into-popup-buffer (cider-popup-buffer cider-result-buffer nil 'clojure-mode 'ancillary)
-                                                                                           value)
-                                                             ;; (message value)
-                                                             )))
+                                                         (when (not (equal "nil" value-string))
+                                                           (let ((value (read value-string)))
+                                                             (if (listp value)
+                                                                 (with-current-buffer buffer
+                                                                   (insert (first (helm :sources
+                                                                                        (helm-build-sync-source ""
+                                                                                          :candidates value)
+                                                                                        :buffer "*helm cider map keys*"))))
+                                                               (cider-emit-into-popup-buffer (cider-popup-buffer cider-result-buffer nil 'clojure-mode 'ancillary)
+                                                                                             value)))))
                                                        (lambda (_buffer _output))
                                                        (lambda (_buffer err)
                                                          (cider-emit-interactive-eval-err-output err))
