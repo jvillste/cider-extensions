@@ -41,7 +41,8 @@
              (= '-> (first sexp)))
     (let [value (eval sexp)]
       (if (map? value)
-        (for [key (keys value)]
+        (for [key (->> (keys value)
+                       (sort-by  pr-str))]
           (let [string-value (pr-str (eval (into (list)
                                                  (reverse (concat sexp [key])))))]
             (list (str key " -> "
