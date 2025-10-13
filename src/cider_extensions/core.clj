@@ -75,9 +75,30 @@
     (is (= "2"
            (thread-first-autocompletions '(-> a-map :vector first :number))))))
 
+(defn keyword-autocompletions [sexp]
+  (when (and (list? sexp)
+             (= 1 (count sexp)))
+    (let [value (eval (first sexp))]
+      (when (map? value)
+        (for [key (->> (keys value)
+                       (filter keyword?)
+                       (sort-by name))]
+          (let [string-value (pr-str (get value key))]
+            (list (str key " -> "
+                       (value-string-preview string-value))
+                  (pr-str key))))))))
+
+(deftest test-keyword-autocompletions
+  (binding [*ns* (find-ns 'cider-extensions.core)]
+    (is (= '((":map -> {:string \"hello\"}" ":map")
+             (":number -> 1" ":number")
+             (":vector -> [{:number 2}]" ":vector"))
+           (keyword-autocompletions '(a-map))))))
+
 (defn autocompletions [first-level-sexp second-level-sexp]
   (or (thread-first-autocompletions first-level-sexp)
-      (select-keys-autocompletions second-level-sexp)))
+      (select-keys-autocompletions second-level-sexp)
+      (keyword-autocompletions first-level-sexp)))
 
 (deftest test-autocompletions
   (binding [*ns* (find-ns 'cider-extensions.core)]
@@ -89,4 +110,9 @@
     (is (= '((":map -> {:string \"hello\"}" ":map")
              (":number -> 1" ":number")
              (":vector -> [{:number 2}]" ":vector"))
-           (autocompletions '() '(select-keys a-map []))))))
+           (autocompletions '() '(select-keys a-map []))))
+
+    (is (= '((":map -> {:string \"hello\"}" ":map")
+             (":number -> 1" ":number")
+             (":vector -> [{:number 2}]" ":vector"))
+           (autocompletions '(a-map) '())))))
