@@ -24,6 +24,7 @@ Put your cursor in one of these positions
 ```
 (<cursor> a-map)
 (-> a-map <cursor>)
+(->> a-map <cursor>)
 (select-keys [<cursor>])
 ```
 

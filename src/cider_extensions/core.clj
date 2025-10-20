@@ -36,9 +36,9 @@
     (is (= nil
            (select-keys-autocompletions '(select-keys))))))
 
-(defn thread-first-autocompletions [sexp]
+(defn threading-macro-autocompletions [sexp]
   (when (and (list? sexp)
-             (= '-> (first sexp)))
+             (#{'-> '->>} (first sexp)))
     (let [value (eval sexp)]
       (if (map? value)
         (for [key (->> (keys value)
@@ -50,30 +50,30 @@
                   (pr-str key))))
         (pr-str value)))))
 
-(deftest test-thread-first-autocompletions
+(deftest test-threading-macro-autocompletions
   (binding [*ns* (find-ns 'cider-extensions.core)]
     (is (= '((":map -> {:string \"hello\"}" ":map")
              (":number -> 1" ":number")
              (":vector -> [{:number 2}]" ":vector"))
-           (thread-first-autocompletions '(-> a-map))))
+           (threading-macro-autocompletions '(-> a-map))))
 
     (is (= "1"
-           (thread-first-autocompletions '(-> a-map :number))))
+           (threading-macro-autocompletions '(-> a-map :number))))
 
     (is (= '((":string -> \"hello\"" ":string"))
-           (thread-first-autocompletions '(-> a-map :map))))
+           (threading-macro-autocompletions '(-> a-map :map))))
 
     (is (= "\"hello\""
-           (thread-first-autocompletions '(-> a-map :map :string))))
+           (threading-macro-autocompletions '(-> a-map :map :string))))
 
     (is (= nil
-           (thread-first-autocompletions "(:keyword)")))
+           (threading-macro-autocompletions "(:keyword)")))
 
     (is (= "[{:number 2}]"
-           (thread-first-autocompletions '(-> a-map :vector))))
+           (threading-macro-autocompletions '(-> a-map :vector))))
 
     (is (= "2"
-           (thread-first-autocompletions '(-> a-map :vector first :number))))))
+           (threading-macro-autocompletions '(-> a-map :vector first :number))))))
 
 (defn keyword-autocompletions [sexp]
   (when (and (list? sexp)
@@ -96,7 +96,7 @@
            (keyword-autocompletions '(a-map))))))
 
 (defn autocompletions [first-level-sexp second-level-sexp]
-  (or (thread-first-autocompletions first-level-sexp)
+  (or (threading-macro-autocompletions first-level-sexp)
       (select-keys-autocompletions second-level-sexp)
       (keyword-autocompletions first-level-sexp)))
 
