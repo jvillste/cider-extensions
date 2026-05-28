@@ -20,7 +20,7 @@
 (defun cider-extensions-accumulating-handler (buffer callback)
   "Return an nREPL response handler for BUFFER that accumulates value chunks.
 When the response is done, calls CALLBACK with BUFFER and the complete
-accumulated value string.  CALLBACK is called only if the value is not nil."
+accumulated value string."
   (setq cider-extensions--accumulated-value "")
   (setq cider-extensions--callback callback)
   (nrepl-make-response-handler buffer
@@ -37,23 +37,29 @@ accumulated value string.  CALLBACK is called only if the value is not nil."
                                  (with-current-buffer buffer
                                    (funcall cider-extensions--callback buffer cider-extensions--accumulated-value)))))
 
+(defun cider-extensions-cider-eval (expr callback)
+  "Evaluate EXPR via nREPL and call CALLBACK with the result value string.
+CALLBACK is called with two arguments: BUFFER and the complete accumulated
+value string."
+  (cider-interactive-eval expr
+                          (cider-extensions-accumulating-handler (current-buffer)
+                                                                 callback)
+                          nil
+                          (cider--nrepl-print-request-plist fill-column)))
+
 (defun cider-extensions-autocompletions ()
   "Offer autocompletions cursor using the context around the cursor and the program runtime state."
   (interactive)
-  (cider-interactive-eval (format "(cider-extensions.core/autocompletions (quote %s) (quote %s))"
-                                  (cider-list-at-point)
-                                  (ignore-errors (save-excursion
-                                                   (up-list 2 t t)
-                                                   (cider-sexp-at-point))))
-                          (cider-extensions-accumulating-handler
-                           (current-buffer)
-                           (lambda (buffer value-string)
-                             (when (not (equal "nil" cider-extensions--accumulated-value))
-                               (let ((value (read value-string)))
-                                 (if (listp value)
-                                     (with-current-buffer buffer
-                                       (insert (ivy-read "Choose: " value)))
-                                   (cider-emit-into-popup-buffer (cider-popup-buffer cider-result-buffer nil 'clojure-mode 'ancillary)
-                                                                 value))))))
-                          nil
-                          (cider--nrepl-print-request-plist fill-column)))
+  (cider-extensions-cider-eval (format "(cider-extensions.core/autocompletions (quote %s) (quote %s))"
+                                       (cider-list-at-point)
+                                       (ignore-errors (save-excursion
+                                                        (up-list 2 t t)
+                                                        (cider-sexp-at-point))))
+                               (lambda (buffer value-string)
+                                 (when (not (equal "nil" value-string))
+                                   (let ((value (read value-string)))
+                                     (if (listp value)
+                                         (with-current-buffer buffer
+                                           (insert (ivy-read "Choose: " value)))
+                                       (cider-emit-into-popup-buffer (cider-popup-buffer cider-result-buffer nil 'clojure-mode 'ancillary)
+                                                                     value)))))))
