@@ -60,6 +60,10 @@ value string."
                                    (let ((value (read value-string)))
                                      (if (listp value)
                                          (with-current-buffer buffer
-                                           (insert (ivy-read "Choose: " value)))
+                                           (let ((candidates (mapcar (lambda (entry)
+                                                                       (cons (car entry) (cadr entry)))
+                                                                     value)))
+                                             (insert (cdr (assoc (ivy-read "Choose: " candidates)
+                                                                 candidates)))))
                                        (cider-emit-into-popup-buffer (cider-popup-buffer cider-result-buffer nil 'clojure-mode 'ancillary)
                                                                      value)))))))
